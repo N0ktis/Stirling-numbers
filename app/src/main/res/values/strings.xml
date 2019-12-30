@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Stirling numbers</string>
+    <string name="k">k=</string>
+    <string name="n">n=</string>
+    <string name="k_hint">0</string>
+    <string name="n_hint">0</string>
+    <string name="calculate">Calculate</string>
+    <string name="answer">Answer:</string>
+</resources>
