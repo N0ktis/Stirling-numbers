@@ -1,17 +1,19 @@
 package com.example.stirlingnumbers;
 
-import android.os.AsyncTask;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import java.util.concurrent.TimeUnit;
-
 public class Calculate_answer extends AppCompatActivity {
     private TextView answer;
-    private Stirling_calc calc;
+    private MyBroadcastReceiver mMyBroadcastReceiver;
+    private UpdateBroadcastReceiver mUpdateBroadcastReceiver;
     private ProgressBar mHorizontalProgressBar;
 
     @Override
@@ -23,66 +25,49 @@ public class Calculate_answer extends AppCompatActivity {
         mHorizontalProgressBar = findViewById(R.id.progress_horizontal);
         k = getIntent().getExtras().getInt("k");
         n = getIntent().getExtras().getInt("n");
-        calc = (Stirling_calc) getLastNonConfigurationInstance();
-        if (calc == null) {
 
-            calc = new Stirling_calc();
-            calc.execute(n, k);
-        }
-        calc.link(this);
+        //инициализируем и запускаем сервис
+        Intent intentMyIntentService = new Intent(this, CalcIntentService.class);
+        startService(intentMyIntentService.putExtra("k", k).putExtra("n", n));
+
+        //инициализируем ресиверы для получения промежуточных и финальных значений
+        mMyBroadcastReceiver = new MyBroadcastReceiver();
+        mUpdateBroadcastReceiver = new UpdateBroadcastReceiver();
+
+        //получаем финальное значение работы сервиса
+        IntentFilter intentFilter = new IntentFilter(CalcIntentService.ACTION_CALCINTENTSERVICE);
+        intentFilter.addCategory(Intent.CATEGORY_DEFAULT);
+        registerReceiver(mMyBroadcastReceiver, intentFilter);
+
+        //получаем промежуточные значения работы сервиса
+        IntentFilter updateIntentFilter = new IntentFilter(CalcIntentService.ACTION_UPDATE);
+        updateIntentFilter.addCategory(Intent.CATEGORY_DEFAULT);
+        registerReceiver(mUpdateBroadcastReceiver, updateIntentFilter);
     }
 
-    public Object onRetainCustomNonConfigurationInstance() {
-        if (calc != null) {
-            calc.unLink();
-        }
-        return calc;
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(mMyBroadcastReceiver);
     }
 
-    static class Stirling_calc extends AsyncTask<Integer, Integer, Integer> {
-
-        Calculate_answer activity;
-
-        void link(Calculate_answer act) {
-            activity = act;
-        }
-
-        void unLink() {
-            activity = null;
-        }
+    //метод для обработки конечного сигнала сервиса
+    public class MyBroadcastReceiver extends BroadcastReceiver {
 
         @Override
-        protected Integer doInBackground(Integer... n_k) {
-            try {
-                int counter = 0;
-                for (int i = 0; i < 10; ++i) {
-                    publishProgress(++counter);
-                    TimeUnit.SECONDS.sleep(1);
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-            return Stirling(n_k[0], n_k[1]);
+        public void onReceive(Context context, Intent intent) {
+            String result = intent.getStringExtra(CalcIntentService.EXTRA_KEY_OUT);
+            answer.setText(result);
         }
+    }
+
+    //метод для обработки промежуточных сигналов сервиса
+    public class UpdateBroadcastReceiver extends BroadcastReceiver {
 
         @Override
-        protected void onPostExecute(Integer result) {
-            super.onPostExecute(result);
-            activity.answer.setText(result.toString());
-        }
-
-        protected void onProgressUpdate(Integer... values) {
-            super.onProgressUpdate(values);
-            if (values[0]==10)
-                activity.mHorizontalProgressBar.setVisibility(ProgressBar.INVISIBLE);
-        }
-
-        private int Stirling(int n, int k) {
-            if (n == k) return 1;
-            else if (k == 0) return 0;
-            else
-                return Stirling(n - 1, k - 1) + k * Stirling(n - 1, k);
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getIntExtra(CalcIntentService.EXTRA_KEY_UPDATE, 0) == 1)
+                mHorizontalProgressBar.setVisibility(ProgressBar.INVISIBLE);
         }
     }
 }

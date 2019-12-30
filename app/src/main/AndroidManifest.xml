@@ -17,6 +17,8 @@
             </intent-filter>
         </activity>
         <activity android:name=".Calculate_answer"></activity>
+
+        <service android:name="com.example.stirlingnumbers.CalcIntentService" />
     </application>
 
 </manifest>

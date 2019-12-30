@@ -26,5 +26,5 @@
         android:layout_height="wrap_content"
         android:indeterminate="true"
         android:max="10"
-        android:progress="1"/>
+        android:progress="1" />
 </LinearLayout>
